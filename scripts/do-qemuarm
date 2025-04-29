@@ -17,8 +17,8 @@ case $HOST_OS_ARCH in
     ;;
 esac
 
-#echo HOST_OS = $HOST_OS
-#echo HOST_OS_ARCH = $HOST_OS_ARCH
+echo HOST_OS = $HOST_OS
+echo HOST_OS_ARCH = $HOST_OS_ARCH
 
 function HELP {
     echo "help:"
@@ -56,13 +56,17 @@ DO_CMPCTMALLOC=0
 DO_MINIHEAP=0
 DO_V9P=0
 DO_V9P_DIR=""
+DO_BUILD=0
+DO_QEMU_GDB=0
 SMP=1
 MEMSIZE=512
 SUDO=""
 PROJECT=""
 
-while getopts cd:ghkm:Mnt36vp:s:f: FLAG; do
+while getopts cd:ghkm:Mnt36vp:s:f:bq FLAG; do
     case $FLAG in
+        b) DO_BUILD=1;;
+        q) DO_QEMU_GDB=1;;
         c) DO_CMPCTMALLOC=1;;
         d) DO_DISK=1; DISK_IMAGE=$OPTARG;;
         g) DO_DISPLAY=1;;
@@ -160,12 +164,19 @@ fi
 
 MAKE_VARS=""
 
+if (( $DO_QEMU_GDB )); then
+    ARGS+=" -s -S "
+fi
+
 if (( $DO_CMPCTMALLOC )); then
     MAKE_VARS=LK_HEAP_IMPLEMENTATION=cmpctmalloc
 elif (( $DO_MINIHEAP )); then
     MAKE_VARS=LK_HEAP_IMPLEMENTATION=miniheap
 fi
 
-$DIR/make-parallel $MAKE_VARS $PROJECT &&
+if (( $DO_BUILD )); then
+    $DIR/make-parallel $MAKE_VARS $PROJECT
+fi
+
 echo $SUDO $QEMU $ARGS $@ &&
 $SUDO $QEMU $ARGS $@
